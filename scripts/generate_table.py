@@ -40,8 +40,7 @@ def generate_html():
         print(f"❌ FEHLER beim Parsen der YAML-Datei: {e}", file=sys.stderr)
         sys.exit(3)
 
-    # Spaltennamen dynamisch sammeln. 
-    # WICHTIG: Wir setzen 'Sektion' als allererste Spalte fest, damit DataTables sauber danach gruppieren kann!
+    # Spalten sammeln (Sektion wird die ganz normale erste Spalte)
     all_columns = []
     for section_item in data:
         for field in section_item.get('fields', []):
@@ -49,7 +48,6 @@ def generate_html():
                 if key not in all_columns:
                     all_columns.append(key)
 
-# HTML Grundgerüst mit flexibler Breiten- und Höhenanpassung
     html_content = f"""<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -57,29 +55,39 @@ def generate_html():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDE Metadatenprofil</title>
     
-    <!-- DataTables CSS + RowGroup CSS -->
+    <!-- NUR NOCH DAS REINE CORE-DATATABLES CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/rowgroup/1.4.1/css/rowGroup.dataTables.min.css">
     
     <style>
+        html, body {{
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }}
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             font-size: 13px;
             color: #333333;
             background-color: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
             padding: 20px;
-            margin: 0;
         }}
         .header-area {{
+            flex: 0 0 auto;
             margin-bottom: 15px;
         }}
+        /* Der umgebende Container füllt den Bildschirm elastisch aus */
         .container {{
+            flex: 1 1 auto;
             background: white;
             padding: 20px;
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            max-width: 100%;
-            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Verhindert, dass der Container selbst scrollt */
         }}
         h1 {{
             font-size: 22px;
@@ -87,45 +95,54 @@ def generate_html():
             margin: 0 0 5px 0;
         }}
         
-        /* Einheitliche Schriftarten */
+        /* Die responsive Box füllt den Rest des Containers und scrollt nativ */
+        .table-responsive {{
+            flex: 1 1 auto;
+            overflow: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+        }}
+        
+        table.dataTable {{
+            margin: 0 !important;
+            width: 100% !important;
+            border-collapse: collapse;
+        }}
+        
         table.dataTable, table.dataTable th, table.dataTable td,
         .dataTables_wrapper, .dataTables_filter input, .dataTables_length select {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
             font-size: 13px !important;
         }}
         
+        /* MODERNES PURE-CSS FIXIEREN DES TABELLENKOPFS */
         table.dataTable thead th {{
+            position: sticky;
+            top: 0;
+            z-index: 10;
             background-color: #f3f4f6;
             color: #111827;
             font-weight: 600;
             border-bottom: 2px solid #e5e7eb !important;
             padding: 10px;
+            text-align: left;
         }}
         
-        /* Feste maximale Breite für Zellen, damit sie bei Textmassen umbrechen */
         table.dataTable tbody td {{
             padding: 10px;
             vertical-align: top;
             max-width: 250px;
-            white-space: normal; /* Erlaubt Textumbrüche */
-            word-break: break-word; /* Bricht lange Wörter */
+            white-space: normal;
+            word-break: break-word;
+            border-bottom: 1px solid #f3f4f6;
         }}
         
-        /* Sektions-Zwischenüberschriften */
-        table.dataTable tr.dtrg-group th {{
-            background-color: #e5e7eb !important;
-            font-weight: bold !important;
-            font-size: 14px !important;
-            color: #1f2937 !important;
-            text-align: left !important;
-            padding: 12px 10px !important;
-            border-bottom: 2px solid #d1d5db !important;
-        }}
-        
-        /* Verhindert, dass die Tabelle den Container sprengt */
-        .dataTables_wrapper {{
-            width: 100% !important;
-            overflow: hidden;
+        /* Hebt die Sektions-Spalte optisch leicht hervor */
+        table.dataTable tbody td.section-cell {{
+            font-weight: 600;
+            color: #4b5563;
+            background-color: #f9fafb;
+            width: 120px;
         }}
     </style>
 </head>
@@ -137,23 +154,34 @@ def generate_html():
 </div>
 
 <div class="container">
-    <table id="mdeTable" class="display stripe row-border cell-border" style="width:100%">
-        <thead>
-            <tr>
-                <th>Sektion</th>
-                {"".join([f"<th>{col.replace('_', ' ').title()}</th>" for col in all_columns])}
-            </tr>
-        </thead>
-        <tbody>
+    <div class="table-responsive">
+        <table id="mdeTable" class="display stripe row-border" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Sektion</th>
+                    {"".join([f"<th>{col.replace('_', ' ').title()}</th>" for col in all_columns])}
+                </tr>
+            </thead>
+            <tbody>
 """
 
     for section_item in data:
         section_title = section_item.get('section', 'Allgemein')
         fields = section_item.get('fields', [])
         
+        # Wir merken uns, ob wir den Sektionsnamen in diesem Block schon gedruckt haben
+        first_row_of_section = True
+        
         for field in fields:
             html_content += "            <tr>\n"
-            html_content += f'                <td>{section_title}</td>\n'
+            
+            # Zeige den Sektionsnamen nur in der ersten Zeile der Gruppe, danach bleibt es übersichtlich leer
+            if first_row_of_section:
+                html_content += f'                <td class="section-cell">{section_title}</td>\n'
+                first_row_of_section = False
+            else:
+                html_content += '                <td class="section-cell" style="color: #cbd5e1;">"</td>\n' # Ein dezentes Wiederholungszeichen oder leer
+                
             for col in all_columns:
                 val = field.get(col, "")
                 formatted_val = format_value(val)
@@ -161,39 +189,29 @@ def generate_html():
             html_content += "            </tr>\n"
 
     html_content += """
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/rowgroup/1.4.1/js/dataTables.rowGroup.min.js"></script>
 
 <script>
 $(document).ready(function() {
-    var table = $('#mdeTable').DataTable({
+    $('#mdeTable').DataTable({
         "language": {
             "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/de-DE.json"
         },
-        "pageLength": 25, // Nutzen wir Pagination statt "-1" (alle), um die Performance und das Scrollen zu schonen
+        "pageLength": -1, // Da CSS das Scrollen übernimmt, können wir wieder alle anzeigen!
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Alle"]],
         "stateSave": true,
-        "order": [],
-        "columnDefs": [
-            { "visible": false, "targets": 0 }
-        ],
-        "rowGroup": {
-            "dataSrc": 0
-        },
-        "autoWidth": false, // Zwingt DataTables, die Breitenberechnung dynamisch zu machen
-        "scrollX": true,    // Aktiviert den horizontalen Scrollbalken innerhalb des Containers
-        "scrollCollapse": true
+        "order": [], // Behält exakt die YAML-Struktur
+        "autoWidth": false,
+        // Keine fehleranfälligen JavaScript-Scrollbalken mehr!
+        "scrollY": false,
+        "scrollX": false
     });
-    
-    // Passt die Spaltenbreiten beim Laden und bei Fenster-Resizing automatisch an
-    setTimeout(function() {
-        table.columns.adjust().draw();
-    }, 150);
 });
 </script>
 
@@ -204,7 +222,7 @@ $(document).ready(function() {
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print("✅ HTML-Tabelle mit fehlerfreiem RowGroup-Layout gebaut!")
+        print("✅ HTML-Tabelle im ultrasauberen Standard-Layout gebaut!")
     except Exception as e:
         print(f"❌ FEHLER beim Schreiben der index.html: {e}", file=sys.stderr)
         sys.exit(4)

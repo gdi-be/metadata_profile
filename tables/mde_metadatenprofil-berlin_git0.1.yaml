@@ -672,7 +672,7 @@
         adopt: false
         template: false
         delete: false
-    - id: -
+    - id: "-"
       key: "-"
       label: "Räumliche Auflösung"
       multiplicity: "1..1"

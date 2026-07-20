@@ -55,7 +55,7 @@ def generate_html():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MDE Metadatenprofil</title>
     
-    <!-- NUR NOCH DAS REINE CORE-DATATABLES CSS -->
+    <!-- Reine Core-DataTables CSS ohne fehleranfällige Plugins -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     
     <style>
@@ -87,7 +87,8 @@ def generate_html():
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Verhindert, dass der Container selbst scrollt */
+            overflow: hidden;
+            max-width: 100%;
         }}
         h1 {{
             font-size: 22px;
@@ -95,17 +96,21 @@ def generate_html():
             margin: 0 0 5px 0;
         }}
         
-        /* Die responsive Box füllt den Rest des Containers und scrollt nativ */
+        /* Die responsive Box füllt den Rest des Containers und scrollt sauber */
         .table-responsive {{
             flex: 1 1 auto;
             overflow: auto;
             border: 1px solid #e5e7eb;
             border-radius: 4px;
+            width: 100%;
         }}
         
+        /* FIX: Zwingt die Tabelle, exakt die Containerbreite zu respektieren */
         table.dataTable {{
             margin: 0 !important;
             width: 100% !important;
+            max-width: 100% !important;
+            table-layout: fixed; /* Hält Kopf und Körper im exakt gleichen Breitenraster */
             border-collapse: collapse;
         }}
         
@@ -115,7 +120,7 @@ def generate_html():
             font-size: 13px !important;
         }}
         
-        /* MODERNES PURE-CSS FIXIEREN DES TABELLENKOPFS */
+        /* MODERNES FIXIEREN DES TABELLENKOPFS PER CSS */
         table.dataTable thead th {{
             position: sticky;
             top: 0;
@@ -126,23 +131,24 @@ def generate_html():
             border-bottom: 2px solid #e5e7eb !important;
             padding: 10px;
             text-align: left;
+            white-space: normal;
+            word-break: break-word;
         }}
         
+        /* Zellenbegrenzung und automatischer Textumbruch */
         table.dataTable tbody td {{
             padding: 10px;
             vertical-align: top;
-            max-width: 250px;
             white-space: normal;
             word-break: break-word;
             border-bottom: 1px solid #f3f4f6;
         }}
         
-        /* Hebt die Sektions-Spalte optisch leicht hervor */
+        /* Hebt die Sektions-Spalte optisch dezent hervor */
         table.dataTable tbody td.section-cell {{
-            font-weight: 600;
-            color: #4b5563;
+            font-weight: 500;
+            color: #6b7280;
             background-color: #f9fafb;
-            width: 120px;
         }}
     </style>
 </head>
@@ -158,29 +164,21 @@ def generate_html():
         <table id="mdeTable" class="display stripe row-border" style="width:100%">
             <thead>
                 <tr>
-                    <th>Sektion</th>
+                    <th style="width: 15%;">Sektion</th>
                     {"".join([f"<th>{col.replace('_', ' ').title()}</th>" for col in all_columns])}
                 </tr>
             </thead>
             <tbody>
 """
 
+    # Befüllen der Zeilen
     for section_item in data:
-        section_title = section_item.get('section', 'Allgemein')
+        section_title = section_item.get('section') or section_item.get('Sektion') or 'Allgemein'
         fields = section_item.get('fields', [])
-        
-        # Wir merken uns, ob wir den Sektionsnamen in diesem Block schon gedruckt haben
-        first_row_of_section = True
         
         for field in fields:
             html_content += "            <tr>\n"
-            
-            # Zeige den Sektionsnamen nur in der ersten Zeile der Gruppe, danach bleibt es übersichtlich leer
-            if first_row_of_section:
-                html_content += f'                <td class="section-cell">{section_title}</td>\n'
-                first_row_of_section = False
-            else:
-                html_content += '                <td class="section-cell" style="color: #cbd5e1;">"</td>\n' # Ein dezentes Wiederholungszeichen oder leer
+            html_content += f'                <td class="section-cell">{section_title}</td>\n'
                 
             for col in all_columns:
                 val = field.get(col, "")
@@ -203,12 +201,11 @@ $(document).ready(function() {
         "language": {
             "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/de-DE.json"
         },
-        "pageLength": -1, // Da CSS das Scrollen übernimmt, können wir wieder alle anzeigen!
+        "pageLength": -1, // Da CSS das Scrollen übernimmt, zeigen wir standardmäßig alle Zeilen
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Alle"]],
         "stateSave": true,
-        "order": [], // Behält exakt die YAML-Struktur
+        "order": [], // Garantiert, dass die originale YAML-Sortierung erhalten bleibt
         "autoWidth": false,
-        // Keine fehleranfälligen JavaScript-Scrollbalken mehr!
         "scrollY": false,
         "scrollX": false
     });
@@ -222,7 +219,7 @@ $(document).ready(function() {
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print("✅ HTML-Tabelle im ultrasauberen Standard-Layout gebaut!")
+        print("✅ HTML-Tabelle erfolgreich und sauber generiert!")
     except Exception as e:
         print(f"❌ FEHLER beim Schreiben der index.html: {e}", file=sys.stderr)
         sys.exit(4)

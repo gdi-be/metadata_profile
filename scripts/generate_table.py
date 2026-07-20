@@ -192,18 +192,24 @@ $(document).ready(function() {
         "pageLength": -1,
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Alle"]],
         "stateSave": true,
-        "order": [], // Behält die YAML-Reihenfolge bei
+        "order": [],
         "columnDefs": [
-            { "visible": false, "targets": 0 } // Blendet die eigentliche "Sektions"-Spalte aus, da wir sie als Gruppen-Kopf nutzen
+            { "visible": false, "targets": 0 } //Ausblenden der ersten Spalte Sektions
         ],
         "rowGroup": {
-            "dataSrc": 0 // Gruppiert die Zeilen anhand des Inhalts von Spalte 0 (Sektion)
+            "dataSrc": 0 //Sortieren der Zeilen nach Sektions
         },
-        "scrollY": "calc(100vh - 190px)",
+        // Nutzt jetzt die stabile DataTables-interne Scrollberechnung (70% der Fensterhöhe)
+        "scrollY": "70vh",
         "scrollX": true,
         "scrollCollapse": true,
         "paging": true
     });
+    
+    // Nach dem Laden die Tabellenbreiten nochmals triggern, damit alles perfekt ausgerichtet ist
+    setTimeout(function() {
+        table.columns.adjust().draw();
+    }, 200);
 });
 </script>
 

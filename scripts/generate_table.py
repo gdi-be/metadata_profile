@@ -1,17 +1,29 @@
 import yaml
 import os
+import sys
 
 def generate_html():
-    # 1. YAML Datei einlesen
-    yaml_path = 'tables/mde_metadatenprofil-berlin_git0.1.yaml'
+    # Ermittelt das tatsächliche Wurzelverzeichnis des Repositories
+    # (Egal ob das Skript aus /scripts/ oder dem Hauptordner gestartet wird)
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    
+    yaml_path = os.path.join(base_dir, '/tables/mde_metadatenprofil-berlin_git0.1.yaml')
+    output_path = os.path.join(base_dir, 'index.html')
+    
+    # Präzise Fehlermeldung, falls die Datei fehlt
     if not os.path.exists(yaml_path):
-        print(f"Datei {yaml_path} nicht gefunden.")
-        return
+        print(f"❌ FEHLER: Die Datei wurde nicht gefunden unter: {yaml_path}", file=sys.stderr)
+        print(f"Gesuchter Ordnerinhalt: {os.listdir(os.path.dirname(yaml_path))}", file=sys.stderr)
+        sys.exit(2)
 
-    with open(yaml_path, 'r', encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+    try:
+        with open(yaml_path, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f)
+    except Exception as e:
+        print(f"❌ FEHLER beim Parsen der YAML-Datei: {e}", file=sys.stderr)
+        sys.exit(3)
 
-    # 2. HTML-Grundgerüst mit Styling und DataTables für Komfort (Suche, Sortierung)
+  # 2. HTML-Grundgerüst mit Styling und DataTables für Komfort (Suche, Sortierung)
     html_content = """<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -108,9 +120,14 @@ def generate_html():
 </html>
 """
 
-    with open('index.html', 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    print("index.html erfolgreich generiert!")
+    # Und hier schreiben wir die index.html ebenfalls sauber ins Hauptverzeichnis
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(html_content)
+        print("✅ HTML-Tabelle via DataTables erfolgreich im Hauptverzeichnis gebaut!")
+    except Exception as e:
+        print(f"❌ FEHLER beim Schreiben der index.html: {e}", file=sys.stderr)
+        sys.exit(4)
 
 if __name__ == "__main__":
     generate_html()

@@ -17,7 +17,6 @@ def linkify(text):
     return url_pattern.sub(replace, html_ready)
 
 def format_value(val):
-    # Behandlung für das 'buttons'-Dictionary aus der YAML
     if isinstance(val, dict):
         badge_html = '<div class="button-badge-container">'
         target_buttons = ['help', 'copy', 'adopt', 'template', 'delete']
@@ -35,16 +34,13 @@ def format_value(val):
             label = labels.get(key, key)
             
             if state is True:
-                # Grüner Haken im Quadrat
                 badge_html += f'<span class="btn-indicator indicator-true" title="{label}: Ja">&#10004;</span>'
             else:
-                # Rotes Kreuz im Quadrat
                 badge_html += f'<span class="btn-indicator indicator-false" title="{label}: Nein">&#10008;</span>'
                 
         badge_html += '</div>'
         return badge_html
     
-    # Globale Haken/Kreuze für andere reine Boolean-Felder in der Tabelle
     if val is True:
         return '<span class="status-icon icon-true" title="Ja">&#10004;</span>'
     if val is False:
@@ -70,7 +66,6 @@ def generate_html():
         print(f"❌ FEHLER beim Parsen der YAML-Datei: {e}", file=sys.stderr)
         sys.exit(3)
 
-    # Alle dynamischen Datenspalten sammeln (Ergibt exakt 12 Spalten)
     all_columns = []
     for section_item in data:
         for field in section_item.get('fields', []):
@@ -78,7 +73,6 @@ def generate_html():
                 if key not in all_columns:
                     all_columns.append(key)
 
-    # REINES HTML & CSS - Optimiert für GitHub Pages ohne Altlasten
     html_content = f"""<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -102,13 +96,14 @@ def generate_html():
             border-radius: 6px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             margin-top: 15px;
-            overflow-x: auto; /* Aktiviert sauberes horizontales Scrollen bei Engpass */
+            overflow-x: auto;
         }}
         
         table {{
             width: 100%;
             border-collapse: collapse;
             text-align: left;
+            table-layout: fixed; /* Zwingt den Browser zur Einhaltung der prozentualen Dynamik */
         }}
         
         th, td {{
@@ -135,41 +130,37 @@ def generate_html():
             padding: 12px 10px;
         }}
         
-        /* Container für die 5 Button-Kästchen */
         .button-badge-container {{
             display: inline-flex;
-            gap: 6px;
+            gap: 4px;
             justify-content: center;
             vertical-align: middle;
         }}
 
-        /* Das standardisierte Quadrat für jeden Zustand */
         .btn-indicator {{
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             cursor: help;
         }}
 
-        /* Farbzuweisungen für die Haken/Kreuze-Matrix */
         .indicator-true {{
-            background-color: #ecfdf5; /* Zartes Grün im Hintergrund */
-            color: #10b981;            /* Satter grüner Haken */
+            background-color: #ecfdf5;
+            color: #10b981;
             border: 1px solid #a7f3d0;
         }}
 
         .indicator-false {{
-            background-color: #fef2f2; /* Zartes Rot im Hintergrund */
-            color: #ef4444;            /* Sattes rotes Kreuz */
+            background-color: #fef2f2;
+            color: #ef4444;
             border: 1px solid #fecaca;
         }}
 
-        /* Globale Symbole für Standard-Boolean-Spalten */
         .status-icon {{
             font-size: 14px;
             font-weight: bold;
@@ -177,22 +168,22 @@ def generate_html():
         .icon-true {{ color: #10b981 !important; }}
         .icon-false {{ color: #ef4444 !important; }}
 
-        /* MINDESTBREITEN FÜR DIE DYNAMISCHE STRUKTUR */
-        table th:nth-child(1), table td:nth-child(1) {{ min-width: 40px; }}   /* id */
-        table th:nth-child(2), table td:nth-child(2) {{ min-width: 160px; }}  /* key */
-        table th:nth-child(3), table td:nth-child(3) {{ min-width: 160px; }}  /* label */
-        table th:nth-child(4), table td:nth-child(4) {{ min-width: 70px; }}   /* multiplicity */
-        table th:nth-child(5), table td:nth-child(5) {{ min-width: 90px; }}   /* field_type */
-        table th:nth-child(6), table td:nth-child(6) {{ min-width: 120px; }}  /* type */
-        table th:nth-child(7), table td:nth-child(7) {{ min-width: 100px; }}  /* role */
-        table th:nth-child(8), table td:nth-child(8) {{ min-width: 110px; }}  /* iso_export */
-        table th:nth-child(9), table td:nth-child(9) {{ min-width: 110px; }}  /* other_channels */
-        table th:nth-child(10), table td:nth-child(10) {{ min-width: 300px; }} /* description */
-        table th:nth-child(11), table td:nth-child(11) {{ min-width: 250px; }} /* codelists_defaults */
+        /* DYNAMISCHE PROZENT-AUFTEILUNG FÜR 100% MONITOR-AUSNUTZUNG */
+        table th:nth-child(1), table td:nth-child(1) {{ width: 30px; }}   /* id (starr klein) */
+        table th:nth-child(2), table td:nth-child(2) {{ width: 10%; }}   /* key */
+        table th:nth-child(3), table td:nth-child(3) {{ width: 10%; }}   /* label */
+        table th:nth-child(4), table td:nth-child(4) {{ width: 5%; }}    /* multiplicity */
+        table th:nth-child(5), table td:nth-child(5) {{ width: 7%; }}    /* field_type */
+        table th:nth-child(6), table td:nth-child(6) {{ width: 8%; }}    /* type */
+        table th:nth-child(7), table td:nth-child(7) {{ width: 8%; }}    /* role */
+        table th:nth-child(8), table td:nth-child(8) {{ width: 8%; }}    /* iso_export */
+        table th:nth-child(9), table td:nth-child(9) {{ width: 7%; }}    /* other_channels */
+        table th:nth-child(10), table td:nth-child(10) {{ width: 22%; }} /* description (atmet dynamisch) */
+        table th:nth-child(11), table td:nth-child(11) {{ width: 15%; }} /* codelists_defaults (atmet dynamisch) */
         
-        /* Die 12. Spalte ("buttons") bekommt genau den Platz, den die 5 Quadrate brauchen */
+        /* Die 12. Spalte ("buttons") bleibt fest versiegelt gegen Ausbrüche */
         table th:nth-child(12), table td:nth-child(12) {{
-            min-width: 140px; 
+            width: 120px; 
             text-align: center;
         }}
     </style>
@@ -238,7 +229,7 @@ def generate_html():
     try:
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html_content)
-        print("✅ HTML-Tabelle mit Haken-Matrix erfolgreich generiert!")
+        print("✅ HTML-Tabelle mit elastischer Breite erfolgreich generiert!")
     except Exception as e:
         print(f"❌ FEHLER beim Schreiben der index.html: {e}", file=sys.stderr)
         sys.exit(4)

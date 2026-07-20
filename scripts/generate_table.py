@@ -31,7 +31,7 @@ def format_value(val):
 
 def generate_html():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    yaml_path = os.path.join(base_dir, 'metadatenprofil.yaml')
+    yaml_path = os.path.join(base_dir, 'tables/mde_metadatenprofil-berlin_git0.1.yaml')
     output_path = os.path.join(base_dir, 'index.html')
     
     if not os.path.exists(yaml_path):

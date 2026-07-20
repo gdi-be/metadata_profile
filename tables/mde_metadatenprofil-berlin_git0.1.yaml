@@ -480,7 +480,7 @@
         adopt: false
         template: true
         delete: false
-    - id: -
+    - id: "-"
       key: "-"
       label: "Gültigkeitszeitraum"
       multiplicity: "0..1"

@@ -23,99 +23,112 @@ def generate_html():
         print(f"❌ FEHLER beim Parsen der YAML-Datei: {e}", file=sys.stderr)
         sys.exit(3)
 
-  # 2. HTML-Grundgerüst mit Styling und DataTables für Komfort (Suche, Sortierung)
+# HTML-Struktur mit der exakt gleichen DataTables-Bibliothek
     html_content = """<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Metadatenprofil Dokumentation</title>
-    <!-- Tailwind CSS für modernes Design -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- DataTables CSS für Sortierung & Suche -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css">
+    <title>MDE Metadatenprofil</title>
+    
+    <!-- CSS für das Tabellen-Framework (DataTables) -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    
     <style>
-        .dataTables_wrapper .dataTables_filter input {
-            border: 1px solid #e2e8f0;
-            padding: 0.375rem 0.75rem;
-            border-radius: 0.375rem;
-            margin-left: 0.5rem;
-        }
-        table.dataTable tbody tr { background-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 20px; background-color: #f9fafb; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { color: #1e3a8a; margin-top: 0; }
+        .font-mono { font-family: monospace; font-size: 12px; }
+        .badge { background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .br-pre { white-space: pre-line; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans p-6">
-    <div class="max-w-7xl mx-auto bg-white p-8 rounded-xl shadow-md">
-        <h1 class="text-3xl font-bold text-blue-900 mb-2">Metadatenprofil</h1>
-        <p class="text-gray-600 mb-6">Automatisch generierte Tabellendokumentation aus der Repository-YAML.</p>
-        
-        <div class="overflow-x-auto">
-            <table id="metadataTable" class="display w-full border-collapse text-sm text-left">
-                <thead class="bg-blue-900 text-white text-xs uppercase">
-                    <tr>
-                        <th class="p-3">Sektion</th>
-                        <th class="p-3">ID / Key</th>
-                        <th class="p-3">Feldname (Label)</th>
-                        <th class="p-3">Kardinalität</th>
-                        <th class="p-3">Feldtyp</th>
-                        <th class="p-3">Beschreibung</th>
-                        <th class="p-3">Codelisten / Standardwerte</th>
-                        <th class="p-3">ISO-Export</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200">
+<body>
+
+<div class="container">
+    <h1>Metadatenprofil (Automatisch generiert aus YAML)</h1>
+    <p style="color: #6b7280; margin-bottom: 20px;">Dieses Profil wird direkt aus der versionierten Git-YAML erzeugt.</p>
+
+    <table id="mdeTable" class="display stripe" style="width:100%">
+        <thead>
+            <tr>
+                <th>Sektion</th>
+                <th>ID</th>
+                <th>Feldname [key]</th>
+                <th>Anzeige-Titel [label]</th>
+                <th>Kardinalität</th>
+                <th>Art des Feldes</th>
+                <th>Funktionsweise</th>
+                <th>Codelisten / Vorbelegungen</th>
+                <th>Export zu ISO</th>
+            </tr>
+        </thead>
+        <tbody>
 """
 
-    # 3. Schleife über die Sektionen und Felder
+    # Flachklopfen der hierarchischen YAML-Struktur für die Tabelle
     for section_item in data:
         section_title = section_item.get('section', 'Allgemein')
         fields = section_item.get('fields', [])
         
         for field in fields:
-            # Sicheres Auslesen der Werte mit Standardfallbacks
+            # Buttons als kleine Häkchen-Liste für die Infospalte aufbereiten
+            btns = field.get('buttons', {})
+            btn_list = []
+            if btns.get('help'): btn_list.append("Hilfe")
+            if btns.get('copy'): btn_list.append("Kopieren")
+            if btns.get('adopt'): btn_list.append("Übernahme")
+            if btns.get('template'): btn_list.append("Vorlage")
+            if btns.get('delete'): btn_list.append("Löschen")
+            btn_str = f"<br><small style='color:#6b7280;'>Buttons: {', '.join(btn_list)}</small>" if btn_list else ""
+
+            # Werte auslesen und Zeilenumbrüche für HTML vorbereiten
             f_id = field.get('id', '')
             f_key = field.get('key', '')
             label = field.get('label', '')
             mult = field.get('multiplicity', '')
             f_type = field.get('field_type', '')
-            desc = field.get('description', '').replace('\n', '<br>')
+            desc = field.get('description', '').replace('\n', '<br>') + btn_str
             codelist = field.get('codelists_defaults', '').replace('\n', '<br>')
             iso = field.get('iso_export', '')
 
             html_content += f"""
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="p-3 font-semibold text-blue-700">{section_title}</td>
-                        <td class="p-3"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-mono">{f_id}</span><br><span class="text-xs text-gray-400 font-mono">{f_key}</span></td>
-                        <td class="p-3 font-medium text-gray-900">{label}</td>
-                        <td class="p-3 text-center">{mult}</td>
-                        <td class="p-3"><span class="text-xs uppercase bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">{f_type}</span></td>
-                        <td class="p-3 text-xs text-gray-600 max-w-xs br-pre">{desc}</td>
-                        <td class="p-3 text-xs font-mono text-purple-700 max-w-xs br-pre">{codelist}</td>
-                        <td class="p-3 text-xs text-gray-500 max-w-xs">{iso}</td>
-                    </tr>"""
+            <tr>
+                <td style="font-weight:600; color:#2563eb;">{section_title}</td>
+                <td class="font-mono">{f_id}</td>
+                <td class="font-mono" style="color:#4b5563;">{f_key}</td>
+                <td><strong>{label}</strong></td>
+                <td style="text-align:center;">{mult}</td>
+                <td><span class="badge">{f_type}</span></td>
+                <td style="font-size:13px;" class="br-pre">{desc}</td>
+                <td class="font-mono br-pre" style="color:#6d28d9; font-size:11px;">{codelist}</td>
+                <td style="font-size:12px; color:#4b5563;">{iso}</td>
+            </tr>"""
 
-    # 4. HTML abschließen und DataTables-Skript aktivieren
+    # JS-Bibliotheken einbinden (jQuery + DataTables)
     html_content += """
-                </tbody>
-            </table>
-        </div>
-    </div>
+        </tbody>
+    </table>
+</div>
 
-    <!-- jQuery und DataTables JS -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
-    <script>
-        $(document).ready( function () {
-            $('#metadataTable').DataTable({
-                "language": {
-                    "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/de-DE.json"
-                },
-                "pageLength": 25,
-                "order": [[ 0, "asc" ]]
-            });
-        });
-    </script>
+<!-- Einbinden der exakt gleichen JavaScript-Bibliotheken -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Initialisierung der Tabelle mit deutscher Übersetzung
+    $('#mdeTable').DataTable({
+        "language": {
+            "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/de-DE.json"
+        },
+        "pageLength": 25,
+        "stateSave": true, // Merkt sich Filterung/Sortierung beim Neuladen
+        "order": [[ 0, "asc" ]] // Sortierung standardmäßig nach Sektion
+    });
+});
+</script>
+
 </body>
 </html>
 """

@@ -7,7 +7,7 @@ def generate_html():
     # (Egal ob das Skript aus /scripts/ oder dem Hauptordner gestartet wird)
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
-    yaml_path = os.path.join(base_dir, '/tables/mde_metadatenprofil-berlin_git0.1.yaml')
+    yaml_path = os.path.join(base_dir, 'tables/mde_metadatenprofil-berlin_git0.1.yaml')
     output_path = os.path.join(base_dir, 'index.html')
     
     # Präzise Fehlermeldung, falls die Datei fehlt
